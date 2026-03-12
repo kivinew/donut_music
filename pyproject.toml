@@ -1,0 +1,11 @@
+[project]
+name = "donat-music"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "colorama>=0.4.6",
+    "pygame-ce>=2.5.7",
+    "pyinstaller>=6.19.0",
+]
