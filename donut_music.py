@@ -2,7 +2,7 @@ import sys
 import math
 import time
 import base64
-import pygame  # [web:79][web:83][web:86]
+import pygame
 from io import BytesIO
 from colorama import init, Fore, Style
 import os
@@ -194,7 +194,7 @@ def start_music_from_embedded():
 
 
 def main():
-    set_console_title("ДИМА, МЫ ТЕБЯ НЕ ЗАБУДЕМ, И ТЫ НАС ПОМНИ!")
+    set_console_title("ДИМАН, ТЫ ЗДОРОВЯК!")
     # сначала фиксируем размер и настраиваем WIDTH/HEIGHT/K1
     lock_console_size_and_setup_geometry(target_cols=100, target_lines=30)
 
