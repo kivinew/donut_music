@@ -3,7 +3,6 @@ import math
 import time
 import base64
 import pygame
-import pygame
 from io import BytesIO
 from colorama import init, Style
 import os
@@ -19,26 +18,46 @@ else:
 
 
 def read_key():
-    """Читает нажатую клавишу. Возвращает 'up','down','left','right','quit' или None."""
+    """Читает нажатую клавишу. Возвращает 'up','down','left','right','plus','minus','reset','quit' или None."""
     if platform.system() == "Windows":
         if msvcrt.kbhit():
             key = msvcrt.getch()
             if key == b'\xe0' or key == b'\x00':
                 key2 = msvcrt.getch()
-                arrow_map = {72: 'up', 80: 'down', 75: 'left', 77: 'right'}
+                arrow_map = {72: 'up', 80: 'down', 75: 'left', 77: 'right',
+                             73: 'plus', 81: 'minus'}
                 return arrow_map.get(key2[0])
             try:
                 ch = key.decode('ascii', errors='replace').lower()
             except Exception:
-                ch = ''
+                try:
+                    ch = key.decode('cp1251', errors='replace').lower()
+                except Exception:
+                    ch = ''
             if ch == 'q' or ch == '\x1b':
                 return 'quit'
+            # Зум: +, =, ;, w, з (русская) для приближения
+            if ch in ('+', '=', ';', 'w', 'з'):
+                return 'plus'
+            # Зум: -, _, s, ы (русская) для отдаления
+            if ch in ('-', '_', 's', 'ы'):
+                return 'minus'
+            if ch == '0':
+                return 'reset'
             return ch
     else:
         if select.select([sys.stdin], [], [], 0) == ([sys.stdin],):
             ch = sys.stdin.read(1)
             if ch == 'q' or ch == '\x1b':
                 return 'quit'
+            # Зум: +, =, ;, w, з (русская) для приближения
+            if ch in ('+', '=', ';', 'w', 'з'):
+                return 'plus'
+            # Зум: -, _, s, ы (русская) для отдаления
+            if ch in ('-', '_', 's', 'ы'):
+                return 'minus'
+            if ch == '0':
+                return 'reset'
             return ch
     return None
 
@@ -59,6 +78,9 @@ UklGRqYkVQBXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAATElTVI4AAABJTkZPSUFSVA8AAABTZXJh
 R1 = 1.0
 R2 = 2.0
 K2 = 8.0
+
+# Параметры зума (масштабирование бублика)
+zoom_scale = 1.0  # множитель масштаба
 
 # ====== ПАЛИТРЫ ======
 # Каждая палитра — список из 7 ANSI-кодов (от тёмного к светлому)
@@ -222,7 +244,10 @@ def luminance_to_color(L: float, palette: list) -> str:
     return palette[idx]
 
 
-def render_frame(A: float, B: float, palette: list) -> str:
+def render_frame(A: float, B: float, palette: list, zoom: float) -> str:
+    # Масштабируем K1 — это управляет размером бублика на экране
+    k1_eff = K1 * zoom
+
     cosA = math.cos(A)
     sinA = math.sin(A)
     cosB = math.cos(B)
@@ -253,8 +278,8 @@ def render_frame(A: float, B: float, palette: list) -> str:
 
             ooz = 1.0 / z
 
-            xp = int(WIDTH / 2 + K1 * ooz * x)
-            yp = int(HEIGHT / 2 - K1 * ooz * y)
+            xp = int(WIDTH / 2 + k1_eff * ooz * x)
+            yp = int(HEIGHT / 2 - k1_eff * ooz * y)
 
             L = (
                 cosphi * costheta * sinB
@@ -323,7 +348,7 @@ def start_music_from_embedded():
 
 
 def main():
-    global current_palette_idx, COLOR_PALETTE
+    global current_palette_idx, COLOR_PALETTE, zoom_scale
     enable_ansi_colors()
     set_console_title("ДМИТРИЙ, МОИ ПОЗДРАВЛЕНИЯ СО ВСТУПЛЕНИЕМ В КОЛЛЕКТИВ 2 ЛИНИИ!")
     bring_console_to_front()
@@ -339,6 +364,7 @@ def main():
     A = 0.0
     B = 0.0
     palette = PALETTES[PALETTE_NAMES[current_palette_idx]]
+    zoom_scale = 1.0
     try:
         first = True
         while True:
@@ -350,16 +376,26 @@ def main():
             elif key == 'left' or key == 'down':
                 current_palette_idx = (current_palette_idx - 1) % len(PALETTE_NAMES)
                 palette = PALETTES[PALETTE_NAMES[current_palette_idx]]
+            elif key == 'plus':
+                # Приближение
+                zoom_scale = min(zoom_scale * 1.15, 4.0)
+            elif key == 'minus':
+                # Отдаление
+                zoom_scale = max(zoom_scale / 1.15, 0.25)
+            elif key == 'reset':
+                # Сброс масштаба
+                zoom_scale = 1.0
             elif key == 'quit':
                 raise KeyboardInterrupt
 
-            frame = render_frame(A, B, palette)
+            frame = render_frame(A, B, palette, zoom_scale)
 
-            # Показываем название текущей палитры
+            # Формируем строку информации
+            zoom_pct = int(zoom_scale * 100)
             palette_info = (
                 f"\x1b[38;5;255m\x1b[48;5;0m "
                 f" Палитра: {PALETTE_NAMES[current_palette_idx]} "
-                f"[←/→] сменить  [Q/Esc] выход "
+                f"[←/→] палитра  [+/-] зум:{zoom_pct}%  [PgUp/PgDn]  [0] сброс  [Q] выход "
                 f"\x1b[0m"
             )
 
