@@ -2,19 +2,49 @@ import sys
 import math
 import time
 import base64
-import pygame  # [web:79][web:83][web:86]
+import pygame
 from io import BytesIO
-from colorama import init, Fore, Style
+from colorama import init, Style
 import os
 import ctypes
 import subprocess
 import shutil
 import platform
 
-init(autoreset=False)
+if platform.system() == "Windows":
+    import msvcrt
+else:
+    import select
+
+
+def read_key():
+    """Читает нажатую клавишу. Возвращает 'up','down','left','right','quit' или None."""
+    if platform.system() == "Windows":
+        if msvcrt.kbhit():
+            key = msvcrt.getch()
+            if key == b'\xe0' or key == b'\x00':
+                key2 = msvcrt.getch()
+                arrow_map = {72: 'up', 80: 'down', 75: 'left', 77: 'right'}
+                return arrow_map.get(key2[0])
+            try:
+                ch = key.decode('ascii', errors='replace').lower()
+            except Exception:
+                ch = ''
+            if ch == 'q' or ch == '\x1b':
+                return 'quit'
+            return ch
+    else:
+        if select.select([sys.stdin], [], [], 0) == ([sys.stdin],):
+            ch = sys.stdin.read(1)
+            if ch == 'q' or ch == '\x1b':
+                return 'quit'
+            return ch
+    return None
+
+init(autoreset=True)
 
 """
-сборка исполняемого файла EXE:
+Сборка исполняемого файла EXE:
 python -m uv run pyinstaller --onefile --console donut_music.py
 """
 
@@ -28,15 +58,87 @@ UklGRqYkVQBXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAATElTVI4AAABJTkZPSUFSVA8AAABTZXJh
 R1 = 1.0
 R2 = 2.0
 K2 = 8.0
-COLOR_PALETTE = [
-    Fore.BLUE,
-    Fore.CYAN,
-    Fore.GREEN,
-    Fore.YELLOW,
-    Fore.MAGENTA,
-    Fore.RED,
-    Fore.WHITE,
-]
+
+# ====== ПАЛИТРЫ ======
+# Каждая палитра — список из 7 ANSI-кодов (от тёмного к светлому)
+PALETTES = {
+    "Океан": [
+        "\x1b[38;5;15m",   # Белый
+        "\x1b[38;5;19m",   # Светло-голубой
+        "\x1b[38;5;26m",   # Голубой
+        "\x1b[38;5;32m",   # Голубой-синий
+        "\x1b[38;5;38m",   # Бирюзовый
+        "\x1b[38;5;44m",   # Бирюзово-зелёный
+        "\x1b[38;5;51m",   # Яркая бирюза/циан
+    ],
+    "Киберпанк": [
+        "\x1b[38;5;198m",  # Ярко-розовый
+        "\x1b[38;5;165m",  # Пурпурный
+        "\x1b[38;5;129m",  # Фиолетовый
+        "\x1b[38;5;93m",   # Глубокий пурпур
+        "\x1b[38;5;57m",   # Сине-фиолетовый
+        "\x1b[38;5;45m",   # Электрик-голубой
+        "\x1b[38;5;51m",   # Неоновый циан
+    ],
+    "Матрица": [
+        "\x1b[38;5;232m",  # Почти чёрный
+        "\x1b[38;5;22m",   # Тёмно-зелёный
+        "\x1b[38;5;28m",   # Зелёный
+        "\x1b[38;5;34m",   # Зелёный-лайм
+        "\x1b[38;5;40m",   # Яркий зелёный
+        "\x1b[38;5;46m",   # Салатовый
+        "\x1b[38;5;154m",  # Ярко-салатовый
+    ],
+    "Закат": [
+        "\x1b[38;5;196m",  # Красный
+        "\x1b[38;5;202m",  # Красно-оранжевый
+        "\x1b[38;5;208m",  # Оранжевый
+        "\x1b[38;5;214m",  # Золотисто-оранжевый
+        "\x1b[38;5;220m",  # Золотой
+        "\x1b[38;5;226m",  # Жёлтый
+        "\x1b[38;5;227m",  # Светло-жёлтый
+    ],
+    "Радуга": [
+        "\x1b[38;5;196m",  # Красный
+        "\x1b[38;5;208m",  # Оранжевый
+        "\x1b[38;5;226m",  # Жёлтый
+        "\x1b[38;5;46m",   # Зелёный
+        "\x1b[38;5;51m",   # Голубой/циан
+        "\x1b[38;5;63m",   # Синий
+        "\x1b[38;5;129m",  # Фиолетовый
+    ],
+    "Лес": [
+        "\x1b[38;5;232m",  # Почти чёрный
+        "\x1b[38;5;22m",   # Тёмно-зелёный
+        "\x1b[38;5;28m",   # Зелёный
+        "\x1b[38;5;34m",   # Средне-зелёный
+        "\x1b[38;5;82m",   # Салатовый
+        "\x1b[38;5;118m",  # Светло-зелёный
+        "\x1b[38;5;154m",  # Мятный
+    ],
+    "Элджей-вейв": [
+        "\x1b[38;5;231m",  # Белый
+        "\x1b[38;5;198m",  # Розовый
+        "\x1b[38;5;165m",  # Пурпурный
+        "\x1b[38;5;129m",  # Фиолетовый
+        "\x1b[38;5;63m",   # Синий
+        "\x1b[38;5;39m",   # Голубой
+        "\x1b[38;5;51m",   # Циан
+    ],
+    "Монохром": [
+        "\x1b[38;5;232m",  # Тёмно-серый
+        "\x1b[38;5;236m",  # Серый
+        "\x1b[38;5;240m",  # Средне-серый
+        "\x1b[38;5;244m",  # Светло-серый
+        "\x1b[38;5;248m",  # Светлее
+        "\x1b[38;5;252m",  # Почти белый
+        "\x1b[38;5;255m",  # Белый
+    ],
+}
+
+PALETTE_NAMES = list(PALETTES.keys())
+current_palette_idx = 0
+COLOR_PALETTE = PALETTES[PALETTE_NAMES[current_palette_idx]]
 PIXEL_CHAR = "@"
 
 
@@ -109,17 +211,17 @@ def lock_console_size_and_setup_geometry(target_cols=100, target_lines=30):
     )
 
 
-def luminance_to_color(L: float) -> str:
+def luminance_to_color(L: float, palette: list) -> str:
     L_norm = (L + 1) / 2
     if L_norm < 0:
         L_norm = 0
     if L_norm > 1:
         L_norm = 1
-    idx = int(L_norm * (len(COLOR_PALETTE) - 1))
-    return COLOR_PALETTE[idx]
+    idx = int(L_norm * (len(palette) - 1))
+    return palette[idx]
 
 
-def render_frame(A: float, B: float) -> str:
+def render_frame(A: float, B: float, palette: list) -> str:
     cosA = math.cos(A)
     sinA = math.sin(A)
     cosB = math.cos(B)
@@ -164,7 +266,7 @@ def render_frame(A: float, B: float) -> str:
                 idx = xp + yp * WIDTH
                 if ooz > zbuffer[idx]:
                     zbuffer[idx] = ooz
-                    color = luminance_to_color(L)
+                    color = luminance_to_color(L, palette)
                     output[idx] = color + PIXEL_CHAR
 
             phi += phi_step
@@ -182,6 +284,32 @@ def move_cursor_home():
     sys.stdout.flush()
 
 
+def enable_ansi_colors():
+    """Включает поддержку ANSI-кодов в Windows консоли."""
+    if platform.system() != "Windows":
+        return
+    from ctypes import windll, wintypes
+    kernel32 = windll.kernel32
+    # ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004
+    STD_OUTPUT_HANDLE = -11
+    h = kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
+    if h and h != wintypes.HANDLE(-1).value:
+        mode = wintypes.DWORD()
+        if kernel32.GetConsoleMode(h, ctypes.byref(mode)):
+            kernel32.SetConsoleMode(h, mode.value | 0x0004)
+
+
+def bring_console_to_front():
+    """Выводит консольное окно на передний план (Windows)."""
+    if platform.system() != "Windows":
+        return
+    hwnd = ctypes.windll.kernel32.GetConsoleWindow()
+    if hwnd:
+        # SW_SHOW = 5, SW_RESTORE = 9
+        ctypes.windll.user32.ShowWindow(hwnd, 9)
+        ctypes.windll.user32.SetForegroundWindow(hwnd)
+
+
 def start_music_from_embedded():
     # декодируем base64 в байты и создаём file-like объект [web:89][web:95]
     wav_bytes = base64.b64decode(LOOP_WAV_B64)
@@ -194,14 +322,14 @@ def start_music_from_embedded():
 
 
 def main():
-    set_console_title("ДИМА, МЫ ТЕБЯ НЕ ЗАБУДЕМ, И ТЫ НАС ПОМНИ!")
-    # сначала фиксируем размер и настраиваем WIDTH/HEIGHT/K1
+    global current_palette_idx, COLOR_PALETTE
+    enable_ansi_colors()
+    set_console_title("ДМИТРИЙ, МОИ ПОЗДРАВЛЕНИЯ СО ВСТУПЛЕНИЕМ В КОЛЛЕКТИВ 2 ЛИНИИ!")
+    bring_console_to_front()
     lock_console_size_and_setup_geometry(target_cols=100, target_lines=30)
-
-    # запускаем встроенную музыку
+    bring_console_to_front()
     start_music_from_embedded()
 
-    # очистка один раз
     if os.name == "nt":
         subprocess.run(["cmd", "/c", "cls"], shell=False, check=False)
     else:
@@ -209,16 +337,39 @@ def main():
 
     A = 0.0
     B = 0.0
+    palette = PALETTES[PALETTE_NAMES[current_palette_idx]]
     try:
         first = True
         while True:
-            frame = render_frame(A, B)
+            # Обработка нажатий клавиш
+            key = read_key()
+            if key == 'right' or key == 'up':
+                current_palette_idx = (current_palette_idx + 1) % len(PALETTE_NAMES)
+                palette = PALETTES[PALETTE_NAMES[current_palette_idx]]
+            elif key == 'left' or key == 'down':
+                current_palette_idx = (current_palette_idx - 1) % len(PALETTE_NAMES)
+                palette = PALETTES[PALETTE_NAMES[current_palette_idx]]
+            elif key == 'quit':
+                raise KeyboardInterrupt
+
+            frame = render_frame(A, B, palette)
+
+            # Показываем название текущей палитры
+            palette_info = (
+                f"\x1b[38;5;255m\x1b[48;5;0m "
+                f" Палитра: {PALETTE_NAMES[current_palette_idx]} "
+                f"[←/→] сменить  [Q/Esc] выход "
+                f"\x1b[0m"
+            )
+
             if first:
                 print(frame)
+                print(palette_info)
                 first = False
             else:
                 move_cursor_home()
                 sys.stdout.write(frame)
+                sys.stdout.write("\n" + palette_info)
                 sys.stdout.flush()
 
             A += 0.03

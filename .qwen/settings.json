@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(taskkill *)",
+      "Bash(python *)",
+      "Bash(timeout *)",
+      "Bash(uv *)",
+      "Bash(cmd *)",
+      "Bash(pip install *)",
+      "Bash(dir *)",
+      "Bash(powershell *)",
+      "Bash(set *)",
+      "Bash(%path%)",
+      "Bash(tasklist)",
+      "Bash(findstr *)"
+    ]
+  },
+  "$version": 3
+}
