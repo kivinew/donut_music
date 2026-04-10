@@ -3,6 +3,7 @@ import math
 import time
 import base64
 import pygame
+import pygame
 from io import BytesIO
 from colorama import init, Style
 import os
