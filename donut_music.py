@@ -234,40 +234,62 @@ def lock_console_size_and_setup_geometry(target_cols=100, target_lines=30):
     )
 
 
+# Инициализация K1 по умолчанию (если функция ещё не вызвана)
+K1 = 80 * K2 * 3 / (8 * (R1 + R2))
+WIDTH = 80
+HEIGHT = 24
+
+
 def luminance_to_color(L: float, palette: list) -> str:
     L_norm = (L + 1) / 2
     if L_norm < 0:
         L_norm = 0
-    if L_norm > 1:
+    elif L_norm > 1:
         L_norm = 1
     idx = int(L_norm * (len(palette) - 1))
     return palette[idx]
+
+
+# Предвычисленные таблицы sin/cos для оптимизации
+theta_step = 0.04
+phi_step = 0.015
+SIN_LOOKUP = [math.sin(i * theta_step) for i in range(int(2 * math.pi / theta_step) + 1)]
+COS_LOOKUP = [math.cos(i * theta_step) for i in range(int(2 * math.pi / theta_step) + 1)]
 
 
 def render_frame(A: float, B: float, palette: list, zoom: float) -> str:
     # Масштабируем K1 — это управляет размером бублика на экране
     k1_eff = K1 * zoom
 
-    cosA = math.cos(A)
-    sinA = math.sin(A)
-    cosB = math.cos(B)
-    sinB = math.sin(B)
+    # Используем предвычисленные значения sin/cos для углов A и B
+    lookup_len = len(COS_LOOKUP)
+    cosA = COS_LOOKUP[int((A % (2 * math.pi)) / theta_step) % lookup_len]
+    sinA = SIN_LOOKUP[int((A % (2 * math.pi)) / theta_step) % lookup_len]
+    cosB = COS_LOOKUP[int((B % (2 * math.pi)) / phi_step) % lookup_len]
+    sinB = SIN_LOOKUP[int((B % (2 * math.pi)) / phi_step) % lookup_len]
 
     output = [" "] * (WIDTH * HEIGHT)
     zbuffer = [-1e9] * (WIDTH * HEIGHT)
 
-    theta_step = 0.04
-    phi_step = 0.015
+    # Кэшируем константы
+    theta_max = 2 * math.pi
+    phi_max = 2 * math.pi
+    
+    # Предварительно вычисляем множители
+    half_width = WIDTH / 2
+    half_height = HEIGHT / 2
 
     theta = 0.0
-    while theta < 2 * math.pi:
-        costheta = math.cos(theta)
-        sintheta = math.sin(theta)
+    theta_idx = 0
+    while theta < theta_max:
+        costheta = COS_LOOKUP[theta_idx]
+        sintheta = SIN_LOOKUP[theta_idx]
 
         phi = 0.0
-        while phi < 2 * math.pi:
-            cosphi = math.cos(phi)
-            sinphi = math.sin(phi)
+        phi_idx = 0
+        while phi < phi_max:
+            cosphi = COS_LOOKUP[phi_idx]
+            sinphi = SIN_LOOKUP[phi_idx]
 
             circlex = R2 + R1 * costheta
             circley = R1 * sintheta
@@ -278,8 +300,8 @@ def render_frame(A: float, B: float, palette: list, zoom: float) -> str:
 
             ooz = 1.0 / z
 
-            xp = int(WIDTH / 2 + k1_eff * ooz * x)
-            yp = int(HEIGHT / 2 - k1_eff * ooz * y)
+            xp = int(half_width + k1_eff * ooz * x)
+            yp = int(half_height - k1_eff * ooz * y)
 
             L = (
                 cosphi * costheta * sinB
@@ -296,7 +318,9 @@ def render_frame(A: float, B: float, palette: list, zoom: float) -> str:
                     output[idx] = color + PIXEL_CHAR
 
             phi += phi_step
+            phi_idx = (phi_idx + 1) % lookup_len
         theta += theta_step
+        theta_idx = (theta_idx + 1) % lookup_len
 
     lines = []
     for y in range(HEIGHT):
