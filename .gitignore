@@ -1,10 +1,1 @@
-# Python-generated files
-__pycache__/
-*.py[oc]
-build/
-dist/
-wheels/
-*.egg-info
-
-# Virtual environments
-.venv
+Nothing should be ignored based on the provided file changes. The only modified file is `donut_music.py`, which is a Python source code file and should not be added to .gitignore.
