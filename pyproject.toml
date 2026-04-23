@@ -1,5 +1,5 @@
 [project]
-name = "donat-music"
+name = "donut-music"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -8,6 +8,7 @@ dependencies = [
     "colorama",
     "pygame-ce>=2.5.7",
     "pyinstaller>=6.19.0",
+    "setuptools>=82.0.1",
 ]
 
 [[tool.uv.index]]

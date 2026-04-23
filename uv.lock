@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.12"
 
 [[package]]
@@ -21,13 +21,14 @@ wheels = [
 ]
 
 [[package]]
-name = "donat-music"
+name = "donut-music"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "colorama" },
     { name = "pygame-ce" },
     { name = "pyinstaller" },
+    { name = "setuptools" },
 ]
 
 [package.metadata]
@@ -35,6 +36,7 @@ requires-dist = [
     { name = "colorama" },
     { name = "pygame-ce", specifier = ">=2.5.7" },
     { name = "pyinstaller", specifier = ">=6.19.0" },
+    { name = "setuptools", specifier = ">=82.0.1" },
 ]
 
 [[package]]
