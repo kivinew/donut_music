@@ -19,7 +19,7 @@ module = Extension(
     sources=['donut_c/donut_renderer.c'],
     extra_compile_args=[
         '/O2', '/Oi', '/Ot', '/Oy', '/GL',
-        '/arch:AVX2', '/fp:fast', '/Qpar', '/openmp', '/W3',
+        '/arch:SSE2', '/fp:fast', '/W3',
     ],
     extra_link_args=['/LTCG'],
     libraries=['user32', 'kernel32']
