@@ -1,0 +1,38 @@
+# ================================================
+# donut_music Git Attributes для GitHub
+# Автоматические метки, иконки и отображение файлов
+# ================================================
+
+# ✅ Основной код проекта
+*.py             linguist-language=Python
+donut_c/*.c      linguist-language=C
+
+# ✅ Конфигурационные файлы
+.gitignore       linguist-documentation=false
+.gitattributes   linguist-documentation=false
+pyproject.toml   linguist-detectable=true
+uv.lock          linguist-vendored
+setup.py         linguist-detectable=true
+
+# ✅ Скрипты и исполняемые файлы
+*.bat            linguist-language=Batchfile
+RUN_DONUT_CONSOLE.bat  linguist-detectable=true
+
+# ✅ Документация
+README.md        linguist-documentation
+
+# ✅ Аудио и бинарные файлы
+*.wav            binary
+*.exe            binary linguist-vendored
+*.dll            binary linguist-vendored
+*.pyd            binary linguist-vendored
+*.so             binary linguist-vendored
+
+# ✅ Папки сборки
+build/**         linguist-generated=true
+dist/**          linguist-generated=true
+*.egg-info/**    linguist-generated=true
+
+# ✅ Старые версии и вспомогательные файлы
+main_old_version.py  linguist-detectable=false
+WAV to text.py       linguist-detectable=false
