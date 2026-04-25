@@ -71,6 +71,9 @@ if __name__ == "__main__":
     last_pause_time = 0
     last_input_time = 0
     running = True
+    volume_levels = [1.0, 0.75, 0.5, 0.25, 0.0]
+    current_volume_idx = 0
+    volume_direction_down = True
     current_palette_idx = 1
     auto_palette_cycle = True
     manual_palette_time = 0.0
@@ -124,10 +127,15 @@ if __name__ == "__main__":
                     last_pause_time = current_time
             elif key == 'music':
                 if current_time - last_input_time > 0.3:
-                    if pygame.mixer.music.get_busy():
-                        pygame.mixer.music.pause()
+                    if volume_direction_down:
+                        current_volume_idx += 1
+                        if current_volume_idx >= len(volume_levels) - 1:
+                            volume_direction_down = False
                     else:
-                        pygame.mixer.music.unpause()
+                        current_volume_idx -= 1
+                        if current_volume_idx <= 0:
+                            volume_direction_down = True
+                    pygame.mixer.music.set_volume(volume_levels[current_volume_idx])
                     last_input_time = current_time
 
             donut_renderer.render_frame(A, B, light_time, zoom)
@@ -158,7 +166,7 @@ if __name__ == "__main__":
             if current_time - last_time >= 1.0:
                 fps = frame_count / (current_time - last_time)
                 kernel32.SetConsoleTitleW(
-                    f"Donut Music 🍩 {fps:.1f} FPS | {PALETTE_NAMES[current_palette_idx]} | Зум: {zoom*100:.0f}% | ←/→ Палитра | ↑/↓ Зум | 0 Сброс | Space Вращение | Q/Esc Выход"
+                    f"Donut Music 🍩  FPS: {fps:.1f} | Палитра ←/→ {PALETTE_NAMES[current_palette_idx]} | Зум ↑/↓: {zoom*100:.0f}% | M Громкость: {volume_levels[current_volume_idx]*100:.0f}% | Space Вращение | Q/Esc Выход"
                 )
                 frame_count = 0
                 last_time = current_time
