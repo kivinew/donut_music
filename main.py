@@ -24,8 +24,7 @@ if platform.system() == "Windows":
 
 """
 Сборка исполняемого файла EXE:
-uv run setup.py build_ext --inplace
-uv run pyinstaller --onefile --console main.py
+uv run -m pyinstaller --onefile --console main.py (или сначала uv run setup.py build_ext --inplace)
 """
 
 def read_key():
