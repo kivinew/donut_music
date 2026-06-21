@@ -7,6 +7,16 @@ import base64
 from io import BytesIO
 from music import LOOP_WAV_B64
 from palettes import PALETTES, PALETTE_NAMES, interpolate_palette
+from girl import VERTICES, EDGES
+
+SHAPE_NAMES = [
+    "Бублик",
+    "Солнечная система",
+    "Танцующая девушка",
+    "Куб",
+    "Сердце",
+    "Галактика",
+]
 
 if platform.system() == "Windows":
     import ctypes
@@ -51,6 +61,10 @@ def read_key():
         return 'pause'
     if user32.GetAsyncKeyState(ord('M')) & 0x8000:
         return 'music'
+    if user32.GetAsyncKeyState(ord('N')) & 0x8000:
+        return 'shape_next'
+    if user32.GetAsyncKeyState(ord('X')) & 0x8000:
+        return 'shape_prev'
     return None
 
 def init_music():
@@ -74,6 +88,7 @@ if __name__ == "__main__":
     current_volume_idx = 0
     volume_direction_down = True
     current_palette_idx = 1
+    current_shape_idx = 0
     auto_palette_cycle = True
     manual_palette_time = 0.0
     frame_count = 0
@@ -83,6 +98,7 @@ if __name__ == "__main__":
 
     init_music()
     donut_renderer.init_console()
+    donut_renderer.set_girl_model(VERTICES, EDGES)
     donut_renderer.set_palette(PALETTES[current_palette_idx])
 
     try:
@@ -136,8 +152,16 @@ if __name__ == "__main__":
                             volume_direction_down = True
                     pygame.mixer.music.set_volume(volume_levels[current_volume_idx])
                     last_input_time = current_time
+            elif key == 'shape_next':
+                if current_time - last_input_time > 0.25:
+                    current_shape_idx = (current_shape_idx + 1) % len(SHAPE_NAMES)
+                    last_input_time = current_time
+            elif key == 'shape_prev':
+                if current_time - last_input_time > 0.25:
+                    current_shape_idx = (current_shape_idx - 1) % len(SHAPE_NAMES)
+                    last_input_time = current_time
 
-            donut_renderer.render_frame(A, B, light_time, zoom)
+            donut_renderer.render_frame(A, B, light_time, zoom, current_shape_idx)
 
             if not paused:
                 A += 0.04
@@ -165,7 +189,7 @@ if __name__ == "__main__":
             if current_time - last_time >= 1.0:
                 fps = frame_count / (current_time - last_time)
                 kernel32.SetConsoleTitleW(
-                    f"Donut Music 🍩  FPS: {fps:.1f} | Палитра ←/→ {PALETTE_NAMES[current_palette_idx]} | Зум ↑/↓: {zoom*100:.0f}% | M Громкость: {volume_levels[current_volume_idx]*100:.0f}% | Space Вращение | Q/Esc Выход"
+                    f"Donut Music 🍩  FPS: {fps:.1f} | Фигура N/X {SHAPE_NAMES[current_shape_idx]} | Палитра ←/→ {PALETTE_NAMES[current_palette_idx]} | Зум ↑/↓: {zoom*100:.0f}% | M Громкость: {volume_levels[current_volume_idx]*100:.0f}% | Space Вращение | Q/Esc Выход"
                 )
                 frame_count = 0
                 last_time = current_time
