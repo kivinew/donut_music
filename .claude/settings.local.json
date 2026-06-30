@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(uv run *)",
-      "PowerShell(Test-Path *)"
+      "PowerShell(Test-Path *)",
+      "Skill(browser-act)"
     ]
   }
 }
